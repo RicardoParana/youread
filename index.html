@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- PWA & Mobile -->
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- SEO -->
+    <title>YouRead | Sua Mente em Foco</title>
+    <meta name="description" content="Leitura guiada, tradução e audiolivros em um só lugar. Ferramentas de acessibilidade e foco.">
+    
+    <!-- Icons -->
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3389/3389081.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3389/3389081.png">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <!-- External Libraries -->
+    <link rel="stylesheet" href="lib/css/all.min.css">
+    
+    <!-- Core Styles -->
+    <link rel="stylesheet" href="style.css?v=2.1">
+    <link rel="stylesheet" href="accessibility.css">
+    <link rel="stylesheet" href="accessibility-themes.css">
+    <link rel="stylesheet" href="ide-themes.css">
+    <link rel="stylesheet" href="user-menu.css">
+    <link rel="stylesheet" href="save-modal.css">
+    <link rel="stylesheet" href="history.css">
+    <link rel="stylesheet" href="profile-cards.css?v=1.5">
+    <link rel="stylesheet" href="reading-history.css?v=1.1">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- OpenDyslexic (Direct Import) -->
+    <style>
+        @font-face {
+            font-family: 'OpenDyslexic';
+            src: url('fonts/OpenDyslexic-Regular.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+    </style>
+    <!-- PDF.js Library -->
+    <script src="lib/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
+    </script>
+    
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "YouRead",
+      "description": "Aplicativo web de leitura focada com ferramentas de acessibilidade, tradução bilíngue e estatísticas em tempo real",
+      "url": "https://seudominio.com/",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "BRL"
+      },
+      "featureList": [
+        "Leitura focada sem distrações",
+        "Tradução bilíngue lado a lado",
+        "Acesso a biblioteca Project Gutenberg",
+        "Busca de letras de músicas",
+        "Importação de conteúdo web",
+        "Ferramentas de acessibilidade para dislexia",
+        "Estatísticas de leitura em tempo real",
+        "Suporte a PDF, EPUB, TXT, HTML"
+      ],
+      "inLanguage": "pt-BR",
+      "browserRequirements": "Requires JavaScript. Requires HTML5.",
+      "softwareVersion": "1.0.0"
+    }
+    </script>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    
+    <!-- Auto Theme & Reading History -->
+    <script src="auto-theme.js"></script>
+    <script src="reading-history.js"></script>
+</head>
+<body>
+    <!-- Header / Navigation (Moved outside app-container for fixed positioning) -->
+    <header class="header glass" id="app-header">
+        <div class="logo">YouRead</div>
+        
+        <!-- Settings Button removed as per user request (moved to content-view only) -->
+
+        <!-- Hamburger Menu (Mobile) -->
+        <button class="hamburger" id="hamburger-btn" aria-label="Menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        
+        <nav class="nav-controls" id="nav-menu">
+            <button class="btn-icon active" id="btn-home" title="Início" onclick="showView('home-view')"><i class="fas fa-home"></i></button>
+            <button class="btn-icon" id="btn-create" title="Criar/Ler" onclick="showView('create-view')"><i class="fas fa-plus-circle"></i></button>
+                <a href="index.html#web" class="btn-icon btn-link" title="Importar Link">
+                    <i class="fas fa-globe"></i>
+                </a>
+                
+                <!-- PWA Install Button -->
+                <button class="btn-icon header-settings" id="btn-pwa-install" title="Instalar App" style="display: none; color: var(--primary);">
+                    <i class="fas fa-download"></i>
+                </button>
+
+
+
+            <button class="btn-icon" id="btn-music" title="Música" onclick="showView('music-view')"><i class="fas fa-music"></i></button>
+            <button class="btn-icon" id="btn-translate-view" title="Traduzir Texto"><i class="fas fa-language"></i></button>
+            <a href="sobre.html" class="btn-icon btn-link" title="Sobre"><i class="fas fa-info-circle"></i></a>
+            
+            <!-- Login Button (shown when logged out) -->
+            <a href="login.html" class="btn-icon btn-link" id="btn-login" title="Login" style="display: none;">
+                <i class="fas fa-sign-in-alt"></i>
+            </a>
+
+            <!-- Global Search Toggle -->
+            <div class="header-search-container">
+                <input type="text" id="global-search-input" class="header-search-input" placeholder="Buscar..." style="display: none;">
+                <button class="btn-icon" id="btn-global-search" title="Buscar">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            
+            <!-- Notification Bell -->
+            <div class="notification-container" style="position: relative;">
+                <button class="btn-icon" id="btn-notifications" title="Notificações" style="display: none;">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge hidden" id="notification-count">0</span>
+                </button>
+                <div class="notification-dropdown glass hidden" id="notification-dropdown">
+                    <div class="notification-header">
+                        <h3>Notificações</h3>
+                        <button id="btn-mark-all-read" title="Marcar todas como lidas"><i class="fas fa-check-double"></i></button>
+                    </div>
+                    <div class="notification-list" id="notification-list">
+                        <p class="empty-notifications">Nenhuma notificação nova.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gamification: Streak & Level -->
+            <div class="gamification-stats" id="gamification-stats" style="display: none; align-items: center; gap: 10px; margin-right: 10px;">
+                <div class="streak-badge" title="Dias em sequência" style="display: flex; align-items: center; color: #f59e0b; font-weight: bold;">
+                    <i class="fas fa-fire"></i>
+                    <span id="header-streak-count" style="margin-left: 4px;">0</span>
+                </div>
+                <div class="level-badge" title="Nível Atual" style="display: flex; align-items: center; background: rgba(139, 92, 246, 0.2); padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; color: #8b5cf6;">
+                    <span style="font-weight: bold;">LVL <span id="header-level-count">1</span></span>
+                </div>
+            </div>
+            
+            <!-- User Menu (shown when logged in) -->
+            <div class="user-menu" id="user-menu" style="display: none;">
+                <button class="btn-icon user-avatar" id="user-avatar" title="Meu Perfil">
+                    <i class="fas fa-user-circle"></i>
+                </button>
+                <div class="user-dropdown" id="user-dropdown">
+                    <div class="user-info">
+                        <div class="user-photo">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <div class="user-details">
+                            <strong id="user-name">Usuário</strong>
+                            <span id="user-email">email@exemplo.com</span>
+                        </div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="profile.html" class="dropdown-item">
+                        <i class="fas fa-tv"></i> Meu Canal
+                    </a>
+                    <a href="editor.html" class="dropdown-item">
+                        <i class="fas fa-pen"></i> Criar Conteúdo
+                    </a>
+                    <a href="profile.html?view=watch_later" class="dropdown-item">
+                        <i class="fas fa-clock"></i> Ler Mais Tarde
+                    </a>
+                    <a href="explore.html" class="dropdown-item">
+                        <i class="fas fa-compass"></i> Explorar
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" id="btn-logout">
+                        <i class="fas fa-sign-out-alt"></i> Sair
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="app-container">
+
+        <!-- Task Control Bar (Hidden by default) -->
+        <div id="task-control-bar" class="task-control-bar glass hidden">
+            <div class="task-status">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span id="task-status-text">Processando...</span>
+            </div>
+            <div class="task-progress-container">
+                <div id="task-progress-bar" class="task-progress-bar" style="width: 0%;"></div>
+            </div>
+            <button id="btn-stop-task" class="btn-stop">
+                <i class="fas fa-stop"></i> Parar
+            </button>
+        </div>
+
+        <!-- Overlay for mobile menu -->
+        <div class="menu-overlay" id="menu-overlay"></div>
+
+        <!-- Main Workspace -->
+        <main class="main-view glass" id="main-workspace">
+            
+            <!-- Global Feed (Home) -->
+            <section id="home-view" class="active">
+                <div class="hero-content">
+                    <h1>Descubra</h1>
+                    <p>O que a comunidade está lendo e criando.</p>
+                </div>
+                
+                <!-- Trending Section -->
+                <section id="trending-section" class="trending-section hidden">
+                    <div class="section-header">
+                        <h2><i class="fas fa-fire"></i> Em Alta</h2>
+                    </div>
+                    <div class="trending-scroll" id="trending-grid">
+                        <!-- Cards will be injected by home.js -->
+                        <div class="loading-small"><i class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                </section>
+
+                <!-- Reading History Section -->
+                <section id="reading-history-section" class="trending-section hidden">
+                    <div class="section-header">
+                        <h2><i class="fas fa-history"></i> Continue Lendo</h2>
+                    </div>
+                    <div class="trending-scroll">
+                        <div id="history-grid" class="trending-grid">
+                            <!-- History cards will be injected by reading-history.js -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Feed Filters -->
+                <div class="feed-filters glass" id="feed-filters">
+                    <button class="filter-chip active" data-filter="all">Tudo</button>
+                    <button class="filter-chip" data-filter="foryou"><i class="fas fa-magic"></i> Para Você</button>
+                    <button class="filter-chip" data-filter="article">Artigos</button>
+                    <button class="filter-chip" data-filter="lyrics">Música</button>
+                    <button class="filter-chip" data-filter="news">Notícias</button>
+                    <div class="filter-divider"></div>
+                    <button class="filter-chip" data-filter="short"><i class="fas fa-hourglass-start"></i> Curto</button>
+                    <button class="filter-chip" data-filter="long"><i class="fas fa-hourglass-half"></i> Longo</button>
+                    <div class="filter-divider"></div>
+                    <button class="filter-chip" data-filter="recent" title="Mais Recentes"><i class="fas fa-sort-amount-down"></i></button>
+                    <button class="filter-chip" data-filter="popular" title="Mais Populares"><i class="fas fa-crown"></i></button>
+                    <button class="filter-chip" data-filter="oldest" title="Mais Antigos"><i class="fas fa-sort-amount-up"></i></button>
+                </div>
+
+                <div id="home-feed-grid" class="content-grid">
+                    <!-- Cards will be injected by home.js -->
+                    <div class="loading-state"><i class="fas fa-spinner fa-spin"></i> Carregando feed...</div>
+                </div>
+
+                <!-- Load More Button -->
+                <div id="load-more-container" class="load-more-container hidden">
+                    <button id="btn-load-more" class="btn-read-more">
+                        Carregar Mais <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div id="loader-more" class="hidden"><i class="fas fa-spinner fa-spin"></i></div>
+                </div>
+            </section>
+
+            <!-- Tools / Create View (Old Welcome Screen) -->
+            <section id="create-view" class="hidden">
+                <div class="hero-content">
+                    <h1>Criar & Ler</h1>
+                    <p>Cole um texto, carregue um arquivo ou busque inspiração.</p>
+                </div>
+                
+                <div class="source-selector">
+                    <button class="source-card" id="btn-add-file">
+                        <i class="fas fa-file-upload"></i>
+                        <span>Arquivos</span>
+                        <small>TXT/HTML/MD/PDF</small>
+                    </button>
+                    <!-- other buttons preserved but moved contextually if needed -->
+                    <button class="source-card" onclick="showView('library-view')">
+                         <i class="fas fa-newspaper"></i>
+                         <span>Notícias</span>
+                    </button>
+                    <button class="source-card" onclick="showView('music-view')">
+                         <i class="fas fa-music"></i>
+                         <span>Música</span>
+                    </button>
+                    <button class="source-card" onclick="showView('web-view')">
+                        <i class="fas fa-globe"></i>
+                        <span>Web</span>
+                    </button>
+                </div>
+
+                <div class="input-area">
+                    <textarea id="text-input" placeholder="Cole seu texto aqui para iniciar a leitura focada..."></textarea>
+                    <div class="action-bar">
+                        <button id="start-reading" class="btn-primary">Começar Leitura</button>
+                        <button class="btn-secondary" id="btn-demo" title="Texto de Exemplo"><i class="fas fa-lightbulb"></i> Exemplo</button>
+                    </div>
+                </div>
+                <input type="file" id="file-upload" hidden accept="text/plain,.txt,text/html,.html,.htm,text/markdown,.md,.markdown,application/pdf,.pdf">
+                
+                <!-- History Section -->
+                <div id="history-section" class="history-section hidden">
+                    <h3><i class="fas fa-history"></i> Histórico Recente</h3>
+                    <div id="history-list" class="history-list"></div>
+                </div>
+            </section>
+
+            <!-- Reader Section (Hidden by default) -->
+            <section id="reader-view" class="hidden">
+                <div id="reading-content" class="reading-content">
+                    <!-- Content will be injected here -->
+                </div>
+                
+                <!-- Reader Audio Player (Local to View, In-Flow) -->
+                <div id="reader-audio-footer" class="reader-audio-footer hidden">
+                    <div class="audio-info">
+                        <span id="audio-title">Título</span>
+                        <small id="audio-artist">Artista</small>
+                    </div>
+                    <div class="audio-controls">
+                        <audio id="reader-preview-player" controls style="height: 30px; width: 100%; max-width: 300px; display: none;"></audio>
+                        <div id="youtube-embed-container" class="youtube-embed-container"></div>
+                    </div>
+                    <button class="btn-icon-small" id="btn-close-audio" title="Fechar Player"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="reader-controls-fixed">
+                    <button class="btn-secondary btn-back-to-home" id="btn-back-reader">Voltar</button>
+                </div>
+            </section>
+            <!-- Music to Text Section (Hidden by default) -->
+            <section id="music-view" class="hidden">
+                <div class="hero-content">
+                    <h1>Transforme Música em Leitura</h1>
+                    <p>Busque por um artista ou música para ler suas letras.</p>
+                </div>
+                <div class="search-box glass">
+                    <input type="text" id="music-search-query" placeholder="Ex: Imagine Dragons - Believer ou The Beatles - Let It Be" value="Imagine Dragons - Believer">
+                    <button id="btn-search-lyrics" class="btn-primary">Buscar Letra</button>
+                </div>
+                <div id="lyrics-results" class="lyrics-grid">
+                    <!-- Search results here -->
+                </div>
+                <button class="btn-secondary btn-back-to-home">Voltar</button>
+            </section>
+            <!-- News & Explore Section (Replaces Gutenberg Library) -->
+            <section id="library-view" class="hidden">
+                <div class="hero-content">
+                    <h1>Explorar Notícias</h1>
+                    <p>Mantenha-se informado com as últimas notícias e artigos.</p>
+                </div>
+                
+                <!-- Category Tabs -->
+                <div class="category-tabs glass">
+                    <button class="category-btn active" data-category="mundo">Mundo</button>
+                    <button class="category-btn" data-category="tecnologia">Tecnologia</button>
+                    <button class="category-btn" data-category="ciencia">Ciência</button>
+                    <button class="category-btn" data-category="dev">Dev & Code</button>
+                    <button class="category-btn" data-category="comunidade">Comunidade</button>
+                </div>
+
+                <div class="search-box glass" style="margin-top: 15px;">
+                    <input type="text" id="library-search-query" list="rss-suggestions" placeholder="Cole um link RSS ou escolha uma sugestão..." value="">
+                    <datalist id="rss-suggestions">
+                        <option value="https://jovemnerd.com.br/feed-completo/">Jovem Nerd (Completo)</option>
+                        <option value="https://meiobit.com/feed/">Meio Bit</option>
+                        <option value="https://macmagazine.com.br/feed/">MacMagazine</option>
+                        <option value="https://feeds.folha.uol.com.br/emcimadahora/rss091.xml">Folha de S.Paulo</option>
+                        <option value="https://epocanegocios.globo.com/rss/ultimas/feed.xml">Época Negócios</option>
+                    </datalist>
+                    <button id="btn-search-library" class="btn-primary">Carregar Feed</button>
+                </div>
+
+                <div id="library-results" class="news-grid">
+                    <!-- News items here -->
+                    <div class="loading-state">
+                        <i class="fas fa-spinner fa-spin"></i> Carregando notícias...
+                    </div>
+                </div>
+                <div class="reader-controls-fixed">
+                    <button class="btn-secondary btn-back-to-home">Voltar</button>
+                </div>
+            </section>
+
+            <!-- Web Content Import Section (Hidden by default) -->
+            <section id="web-view" class="hidden">
+                <div class="hero-content">
+                    <h1>Importar Artigo Web</h1>
+                    <p>Insira a URL de um artigo ou site para converter em formato de leitura.</p>
+                </div>
+                <div class="search-box glass">
+                    <input type="url" id="web-import-url" placeholder="https://exemplo.com/artigo-interessante">
+                    <button id="btn-do-web-import" class="btn-primary">Importar Conteúdo</button>
+                </div>
+                <div id="web-import-status" class="import-status">
+                    <!-- Status messages here -->
+                </div>
+                <button class="btn-secondary btn-back-to-home">Voltar</button>
+            </section>
+
+        </main>
+
+        <!-- Global Back Button (Fixed Top) -->
+        <div id="global-back-container" class="global-back-container hidden">
+            <button id="btn-global-back" class="btn-back-global">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </button>
+        </div>
+
+        <!-- Settings Panel (Moved outside main to avoid stacking context issues) -->
+        <section id="settings-panel" class="hidden settings-panel">
+            <div class="settings-header">
+                <h2><i class="fas fa-cog"></i> Configurações de Acessibilidade</h2>
+                <button class="btn-close-settings" id="btn-close-settings"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="settings-content">
+                <div class="setting-group">
+                    <h3><i class="fas fa-font"></i> Fonte</h3>
+                    <div class="setting-options">
+                        <button class="setting-btn active" data-font="default">Padrão</button>
+                        <button class="setting-btn" data-font="opendyslexic">OpenDyslexic</button>
+                        <button class="setting-btn" data-font="arial">Arial</button>
+                        <button class="setting-btn" data-font="georgia">Georgia</button>
+                        <button class="setting-btn" data-font="comic">Comic Sans</button>
+                    </div>
+                    <p class="setting-description"><i class="fas fa-info-circle"></i> OpenDyslexic é especialmente projetada para pessoas com dislexia</p>
+                </div>
+                <div class="setting-group">
+                    <h3><i class="fas fa-text-height"></i> Tamanho da Fonte</h3>
+                    <div class="setting-slider">
+                        <button class="btn-icon-small" id="decrease-font"><i class="fas fa-minus"></i></button>
+                        <input type="range" id="font-size-slider" min="14" max="28" value="18" step="2">
+                        <button class="btn-icon-small" id="increase-font"><i class="fas fa-plus"></i></button>
+                        <span id="font-size-value">18px</span>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <h3><i class="fas fa-align-justify"></i> Espaçamento entre Linhas</h3>
+                    <div class="setting-slider">
+                        <input type="range" id="line-height-slider" min="1.2" max="2.5" value="1.8" step="0.1">
+                        <span id="line-height-value">1.8</span>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <h3><i class="fas fa-ruler-horizontal"></i> Régua de Leitura</h3>
+                    <div class="setting-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="reading-ruler-toggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span>Ativar régua que acompanha o cursor</span>
+                    </div>
+                    <p class="setting-description"><i class="fas fa-info-circle"></i> Destaca a linha onde está o cursor</p>
+                </div>
+                <div class="setting-group">
+                    <h3><i class="fas fa-book"></i> Dicionário</h3>
+                    <div class="setting-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="dictionary-toggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span>Ativar dicionário ao selecionar palavras</span>
+                    </div>
+                    <p class="setting-description"><i class="fas fa-info-circle"></i> Selecione uma palavra para ver sua definição</p>
+                </div>
+                
+                <!-- Syntax Highlighting -->
+                <div class="setting-group">
+                    <h3><i class="fas fa-code"></i> Destaque de Sintaxe</h3>
+                    <div class="setting-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="syntax-highlighting-toggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span>Colorir texto por pontuação</span>
+                    </div>
+                    <p class="setting-description"><i class="fas fa-info-circle"></i> Perguntas em vermelho, ideias em amarelo e assunto principal em verde</p>
+                    <div id="syntax-themes-grid" class="syntax-themes-grid" style="margin-top: 1rem; display: grid; grid-template-columns: 1fr; gap: 0.75rem;"></div>
+                </div>
+
+                <!-- Translation Settings -->
+                <div class="setting-group">
+                    <h3><i class="fas fa-language"></i> Tradução Online</h3>
+                    <div class="setting-control" style="margin-top: 0.5rem;">
+                        <label for="translate-language" style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Idioma de Destino:</label>
+                        <select id="translate-language" class="setting-select glass" style="width: 100%; border-radius: 8px; padding: 0.6rem; color: var(--text-primary); border: 1px solid var(--glass-border);">
+                            <option value="en" selected>Inglês (English)</option>
+                            <option value="pt">Português</option>
+                            <option value="es">Espanhol (Español)</option>
+                            <option value="fr">Francês (Français)</option>
+                            <option value="de">Alemão (Deutsch)</option>
+                            <option value="it">Italiano</option>
+                            <option value="ja">Japonês (日本語)</option>
+                            <option value="ru">Russo (Русский)</option>
+                            <option value="zh">Chinês (中文)</option>
+                        </select>
+                        <button id="btn-apply-translation" class="btn-primary" style="width: 100%; margin-top: 0.8rem; padding: 0.6rem; border-radius: 8px;">
+                            <i class="fas fa-language"></i> Traduzir Agora
+                        </button>
+                    </div>
+                    <p class="setting-description"><i class="fas fa-info-circle"></i> O texto será traduzido frase por frase com exibição bilíngue</p>
+                </div>
+
+                <!-- Theme -->
+                <div class="setting-group">
+                    <h3><i class="fas fa-palette"></i> Tema</h3>
+                    <div class="setting-options">
+                        <button class="setting-btn active" data-theme="dark">Escuro</button>
+                        <button class="setting-btn" data-theme="light">Claro</button>
+                        <button class="setting-btn" data-theme="sepia">Sépia</button>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-footer">
+                <button class="btn-secondary" id="reset-settings"><i class="fas fa-undo"></i> Restaurar Padrões</button>
+            </div>
+        </section>
+
+        <!-- Reading Support Elements -->
+        <div id="reading-ruler" class="reading-ruler hidden"></div>
+        <div id="dictionary-tooltip" class="dictionary-tooltip hidden">
+            <div class="dictionary-content">
+                <div class="dictionary-header">
+                    <strong id="dictionary-word"></strong>
+                    <button class="btn-close-dict"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="dictionary-definition" id="dictionary-definition">Carregando definição...</div>
+            </div>
+        </div>
+
+
+        <!-- Productivity Overlay / Footer -->
+        <footer class="footer" id="app-footer">
+            <div class="productivity-stats">
+                <span id="stat-wpm">WPM: 0</span>
+                <span id="stat-timer">Tempo: 00:00</span>
+                <span id="stat-progress">Progresso: 0%</span>
+            </div>
+            <p>&copy; 2026 YouRead - Transformando leitura em conhecimento.</p>
+        </footer>
+    </div>
+
+
+    <!-- Scripts -->
+    <script src="firebase-config.js"></script>
+    <script src="auth.js"></script>
+    <!-- Dependencies first -->
+    <script src="syntax-highlighter.js"></script> <!-- Defines SyntaxHighlighter class -->
+    <script src="accessibility.js"></script>     <!-- Defines settings and UI -->
+    
+    <!-- Utilities & Cache -->
+    <script src="cache-service.js"></script>
+    <script src="utils.js"></script>
+    
+    <!-- Services -->
+    <script src="library-service.js"></script>
+    <script src="music-service.js"></script>
+    <script src="web-import-service.js"></script>
+    <script src="translation-service.js"></script>
+    <script src="file-service.js"></script>
+    <script src="history-service.js"></script>
+    <script src="news-service.js"></script>
+    
+    <!-- Library System -->
+    <script src="user-library-service.js"></script>
+    <script src="tag-input.js"></script>
+    <script src="category-manager.js"></script>
+    <script src="save-modal.js"></script>
+    <script src="gamification-service.js"></script>
+    
+    <!-- Main Application -->
+    <script src="auth.js"></script>
+    <script src="cards.js?v=1.3"></script>
+    <script src="interactions.js"></script>
+    <script src="home.js?v=1.0"></script>
+    <script src="playlist-service.js"></script>
+    <script src="toast-service.js"></script>
+    <script src="app.js?v=2.2"></script>
+    
+    <!-- Extensions -->
+    <script src="syntax-integration.js"></script>
+    <script src="user-menu.js"></script>
+    <script src="notification-service.js"></script>
+    <script src="pwa-install.js"></script>
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
